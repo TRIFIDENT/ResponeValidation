@@ -27,8 +27,8 @@
                      @ @@         @@@@@  @@@@@@@@@@@  ,@@@@@@@@@@@@,@@% ,@@@@@@@          
                       @           @@@@@ @@                  &@@& @@  @@@@@@               
                                  @@@@@@@*                                                 
-                                @@@ @@           TRIFIDENT VALIDATION                                         
-                             @@   @              - POWERSHELL TESTS -                                      
+                                @@@ @@           TRIFIDENT VALIDATION        
+                             @@   @              - POWERSHELL TESTS -    
                          @@ @@@@@                                                         
                              @        
 ```
