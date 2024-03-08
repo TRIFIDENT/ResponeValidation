@@ -56,6 +56,7 @@ function Get-OSType {
     Write-Host -NoNewline "Operating System: " -ForegroundColor $color -BackgroundColor Black
     Write-Host -NoNewline "$os" -ForegroundColor $color -BackgroundColor Black
     Write-Host " (Selecting appropriate tests)`n"
+    Log-Message "Operating System: $os"
 }
 
 
@@ -68,8 +69,10 @@ function Test-C2-Port {
         $tcpClient.Connect($IPAddress, $Port)
         $tcpClient.Close()
         Write-Host "**WARNING** C2 IS CURRENTLY LISTENING." -ForegroundColor Red
+        Log-Message "C2: Operational"
     } catch {
         Write-Host "C2 Server is NOT LISTENING (PORT NOT ACCESSIBLE)`n" -ForegroundColor Green
+        Log-Message "C2 Server is NOT LISTENING (PORT NOT ACCESSIBLE)"
     }
 }
 
@@ -90,20 +93,21 @@ function Test-SMTPAuthentication {
             $SMTPClient.EnableSsl = $true
             $SMTPClient.Credentials = $Credentials
             $SMTPClient.Timeout = 5000  # Set timeout to 5 seconds
+            Log-Message "Attempting SMTP Authentication"
             $SMTPClient.Send("ValidationScript@trifident.com", "to@example.com", "", "")
 
             # If no exception is thrown, authentication was successful
             Write-Host "Authentication successful. Proceeding with the script..."
+            Log-Message "SMTP Authentication successful."
             return 
         } catch {
             # If an exception is thrown, authentication failed
             Write-Host "Authentication failed. Please check your credentials and try again."
+            Log-Message "SMTP Authentication unsuccessful."
             $ScriptPassword = Get-Script-Password
         }
     } while ($true)  # Continue prompting until successful authentication
 }
-
-
 
 
 function Get-Script-Password {
@@ -122,9 +126,28 @@ function Get-Script-Password {
     return $SecurePassword
 }
 
+function Log-Message {
+    param(
+        [string]$Message
+    )
+
+    # Get current timestamp in UTC
+    $TimestampUtc = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
+
+    # Convert UTC timestamp to Eastern time
+    $TimeZone = [System.TimeZoneInfo]::FindSystemTimeZoneById("Eastern Standard Time")
+    $TimestampEastern = (Get-Date -Date $TimestampUtc -TimeZone $TimeZone).ToString("yyyy-MM-dd HH:mm:ss EST")
+
+    # Format log message with both timestamps
+    $LogMessage = "[$TimestampUtc UTC | $TimestampEastern EST] $Message"
+
+    # Append log message to log file
+    Add-Content -Path "logfile.txt" -Value $LogMessage
+}
 
 # Function to run commands 
 function Run-AtomicTest1-Windows {
+    Log-Message "Run-AtomicTest1-Windows: Starting"
     Write-Host "
     Test 1: T1204.002 : User Execution: Defanged malicious .lnk file
     ------------------------------------
@@ -159,23 +182,28 @@ function Run-AtomicTest1-Windows {
     
     try {
         # Try downloading the file from the first URL
+        Log-Message "Run-AtomicTest1-Windows Downloading LNK file"
         Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $firstUrl -ErrorAction Stop
         Write-Host "File downloaded successfully from $firstUrl"
+        Log-Message "Run-AtomicTest1-Windows: Downloaded LNK file successfully from $firstUrl"
     }
     catch {
         # If an error occurs, display the error message
         Write-Host "Error downloading file from $($firstUrl): $_"
         Write-Host "Trying second URL..."
+        Log-Message "Run-AtomicTest1-Windows: $firstUrl Unsuccessful Download"
         
         try {
             # Try downloading the file from the second URL
             Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $secondUrl -ErrorAction Stop
             Write-Host "File downloaded successfully from $secondUrl"
+            Log-Message "Run-AtomicTest1-Windows: Downloaded LNK file successfully from $secondUrl"
         }
         catch {
             # If an error occurs again, display the error message and exit
             Write-Host "Error downloading file from $($secondUrl): $_"
             Write-Host "Failed to download the file from both URLs. Updating log information"
+            Log-Message "Run-AtomicTest1-Windows: Unsuccessful Download from both URLs"
             return
         }
     }
@@ -184,15 +212,18 @@ function Run-AtomicTest1-Windows {
     $file1 = "$tempDirectory\test10.lnk"
 
     # Execute the downloaded file
+    Log-Message "Run-AtomicTest1-Windows: Execute the downloaded file: $file1"
     Start-Process $file1
 
     # Wait for 10 seconds
     Start-Sleep -Seconds 10
 
     # Kill the process named "a.exe"
+    Log-Message "Run-AtomicTest1-Windows: Kill the process named a.exe"
     taskkill /IM a.exe /F
 
     # Removing all downloaded or created files
+    Log-Message "Run-AtomicTest1-Windows: Removing all downloaded or created files"
     $file1 = "$tempDirectory\test10.lnk"
     $file2 = "$tempDirectory\a.exe"
     Remove-Item $file1 -ErrorAction Ignore
@@ -200,6 +231,7 @@ function Run-AtomicTest1-Windows {
 }
 
 function Run-AtomicTest2-Windows {
+    Log-Message "Run-AtomicTest2-Windows: Starting"
     Write-Host "
     Test 2: T1204.002 : User Execution: Defanged Malware: Meterpreter
     ------------------------------------
@@ -303,6 +335,7 @@ function Run-AtomicTest2-Windows {
 
 }
 
+Log-Message "Starting script execution..."
 # Call the function to display the logo and begin tests
 Show-Logo
 Get-OSType
