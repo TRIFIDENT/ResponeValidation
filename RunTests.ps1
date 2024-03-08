@@ -28,10 +28,10 @@ function Show-Logo {
                                     @ @@         @@@@@  @@@@@@@@@@@  ,@@@@@@@@@@@@,@@% ,@@@@@@@          
                                      @           @@@@@ @@                  &@@& @@  @@@@@@               
                                                 @@@@@@@*                                                 
-                                               @@@ @@                                                    
-                                            @@   @                                                       
-    TRIFIDENT                           @@ @@@@@                                                         
-Security Validation Tests v0.1              @                       
+                                               @@@ @@         TRIFIDENT VALIDATION                                           
+                                            @@   @            - POWERSHELL TESTS -                                            
+                                         @@ @@@@@                                                         
+                                             @                       
 "@
 }
 
@@ -135,7 +135,7 @@ function Run-AtomicTest1-Windows {
     decision to block macros by default for files downloaded from the internet in Office 
     applications provoked malware developers to shift to other techniques.
     
-    This test downloads a crafted .lnk file from Atomic RedTeam's github repository, and 
+    This test downloads a crafted .lnk (Atomic RedTeam) from Trifident's github repository, and 
     then attempts to execute it. When executed, the .lnk file attempts to download a clean 
     copy of Putty (a windows based ssh client) as 'a.exe' and attempts to execute it.
 
