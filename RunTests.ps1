@@ -132,14 +132,14 @@ function Log-Message {
     )
 
     # Get current timestamp in UTC
-    $TimestampUtc = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
+    $TimestampUtc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss UTC")
 
     # Convert UTC timestamp to Eastern time
     $TimeZone = [System.TimeZoneInfo]::FindSystemTimeZoneById("Eastern Standard Time")
-    $TimestampEastern = (Get-Date -Date $TimestampUtc -TimeZone $TimeZone).ToString("yyyy-MM-dd HH:mm:ss EST")
+    $TimestampEastern = [System.TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::ParseExact($TimestampUtc, "yyyy-MM-dd HH:mm:ss UTC", $null), $TimeZone).ToString("yyyy-MM-dd HH:mm:ss EST")
 
     # Format log message with both timestamps
-    $LogMessage = "[$TimestampUtc UTC | $TimestampEastern EST] $Message"
+    $LogMessage = "[$TimestampUtc | $TimestampEastern] $Message"
 
     # Append log message to log file
     Add-Content -Path "logfile.txt" -Value $LogMessage
