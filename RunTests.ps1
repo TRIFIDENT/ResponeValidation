@@ -55,15 +55,75 @@ function Get-OSType {
     # Print the operating system with color and bold style
     Write-Host -NoNewline "Operating System: " -ForegroundColor $color -BackgroundColor Black
     Write-Host -NoNewline "$os" -ForegroundColor $color -BackgroundColor Black
-    Write-Host " (Selecting appropriate tests)"
+    Write-Host " (Selecting appropriate tests)`n"
+}
+
+
+
+function Test-C2-Port {
+    $IPAddress = "172.174.245.183"
+    $Port = 9191
+    try {
+        $tcpClient = New-Object System.Net.Sockets.TcpClient
+        $tcpClient.Connect($IPAddress, $Port)
+        $tcpClient.Close()
+        Write-Host "**WARNING** C2 IS CURRENTLY LISTENING." -ForegroundColor Red
+    } catch {
+        Write-Host "C2 Server is NOT LISTENING (PORT NOT ACCESSIBLE)`n" -ForegroundColor Green
+    }
+}
+
+
+function Test-SMTPAuthentication {
+    do {
+        # Prompt the user for SMTP server, username, and password
+        $SmtpServer = "mail.smtp2go.com"
+        $Username = "ValidationScript"
+        $SecurePassword = $ScriptPassword
+
+        # Create a credential object
+        $Credentials = New-Object System.Management.Automation.PSCredential ($Username, $SecurePassword)
+
+        # Attempt to connect to the SMTP server and authenticate
+        try {
+            $SMTPClient = New-Object Net.Mail.SmtpClient($SmtpServer)
+            $SMTPClient.EnableSsl = $true
+            $SMTPClient.Credentials = $Credentials
+            $SMTPClient.Timeout = 5000  # Set timeout to 5 seconds
+            $SMTPClient.Send("ValidationScript@trifident.com", "to@example.com", "", "")
+
+            # If no exception is thrown, authentication was successful
+            Write-Host "Authentication successful. Proceeding with the script..."
+            return 
+        } catch {
+            # If an exception is thrown, authentication failed
+            Write-Host "Authentication failed. Please check your credentials and try again."
+            $ScriptPassword = Get-Script-Password
+        }
+    } while ($true)  # Continue prompting until successful authentication
 }
 
 
 
 
+function Get-Script-Password {
+    # Prompt the user for a password without showing the username prompt
+    Write-Host -NoNewline "Please enter the password provided by TRIFIDENT: "
+    $SecurePassword = Read-Host -AsSecureString
+
+    # Convert the secure string password to plain text
+    # Convert the secure string password to plain text
+    $Ptr = [System.Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemUnicode($SecurePassword)
+    $password = [System.Runtime.InteropServices.Marshal]::PtrToStringUni($Ptr)
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeCoTaskMemUnicode($Ptr)
+
+    # Use the entered password (example)
+    #Write-Host "Password: $password"
+    return $SecurePassword
+}
 
 
-# Function to run commands
+# Function to run commands 
 function Run-AtomicTest1-Windows {
     Write-Host "
     Test 1: T1204.002 : User Execution: Defanged malicious .lnk file
@@ -71,15 +131,16 @@ function Run-AtomicTest1-Windows {
     
     LNK files are based on the Shell Link Binary file format, also known as Windows
     shortcuts. But what seems a relatively simple ability to execute other binaries 
-    on the    system can inflict great harm when abused by threat actors. Microsoft’s 
+    on the system can inflict great harm when abused by threat actors. Microsoft’s 
     decision to block macros by default for files downloaded from the internet in Office 
     applications provoked malware developers to shift to other techniques.
     
-    This test downloads a crafted .lnk file from Atomic RedTeam's github repository, and then attempts to execute it. 
-    When executed, the .lnk file attempts to download a clean copy of Putty (a windows based ssh client) as 'a.exe' 
-    and attempts to execute it.
+    This test downloads a crafted .lnk file from Atomic RedTeam's github repository, and 
+    then attempts to execute it. When executed, the .lnk file attempts to download a clean 
+    copy of Putty (a windows based ssh client) as 'a.exe' and attempts to execute it.
 
-    Expected Outcome: SentinelOne detects, alerts, and quarantines the LNK file, however
+    ------------------------------------
+    Expected Outcome: EDR detects, alerts, and quarantines the LNK file, however
     Putty still executes.
     
     "
@@ -155,17 +216,14 @@ function Run-AtomicTest2-Windows {
     172.174.245.183. The C2 meterpreter listener is disabled by default on our C2 server. If
     execution succeeds, the C2 channel will not be established. 
     
-    If you would like to validate the C2 server is non-operational prior to execution, 
-    you can perform the following test:
-    
-        nmap -p 9191 172.174.245.183
-    
-    *Note: Other ports may be open as this C2 server is used for multiple engagements.
-
-    Expected Outcome: SentinelOne detects, alerts, and quarantines shell.exe without execution.
+    ------------------------------------
+    Expected Outcome: EDR detects, alerts, and quarantines shell.exe without execution.
     
     "
-    
+    Write-Host "    Validating the C2 server is " -NoNewline
+    Write-Host "non-operational" -ForegroundColor Green -NoNewline
+    Write-Host " prior to execution: " -NoNewline
+    Test-C2-Port
     # First URL to download
     $firstUrl = "https://github.com/TRIFIDENT/ResponseValidation/raw/main/payloads/shell-trifident.zip"
     
@@ -248,6 +306,12 @@ function Run-AtomicTest2-Windows {
 # Call the function to display the logo and begin tests
 Show-Logo
 Get-OSType
+# Prompt the user for execution password
+$ScriptPassword = Get-Script-Password
+Test-SMTPAuthentication
+
+
+
 # Get the temporary directory path
 $tempDirectory = [System.IO.Path]::GetTempPath()
 Run-AtomicTest1-Windows
