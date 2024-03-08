@@ -32,6 +32,14 @@
     TRIFIDENT                           @@ @@@@@
 Security Validation Tests v0.1              @
 ```
+
+# DO NOT RUN WITHOUT EXPRESSED CONSENT FROM TRIFIDENT
+To execute, simply run the following command from a machine with PowerShell installed (Windows / MacOS)
+```
+Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/TRIFIDENT/ResponseValidation/main/RunTests.ps1").Content
+```
+
+## What does this Tool Do?
 Runs a series of validation checks on the local machine to serve as proof-points for our assessment and are based on the identification of implemented security controls, where we attempt to validate these controls are working as intended. This is not a penetration test, rather a validation that security controls are working properly, and where possible, to test incident communications between providers and response times.
 
 The Following test will be performed:
